@@ -30,6 +30,7 @@ if __name__ == '__main__':
 
     for i, data in enumerate(train_loader):
         print(torch.max(data['images'][0]))
+        print(data['images'].shape)
         print(model(data['images']))
         if i == 0:
             break
