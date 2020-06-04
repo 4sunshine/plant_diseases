@@ -3,6 +3,7 @@ from torchvision import transforms, utils
 from utils import PlantDiseaseDataset, splitted_loaders
 import numpy as np
 import random
+from model import Leafnet
 
 
 if __name__ == '__main__':
@@ -24,8 +25,12 @@ if __name__ == '__main__':
     '''LOADERS OF DATA'''
     train_loader, test_loader = splitted_loaders(dataset, batch_size=batch_size, train_size=train_size)
 
+    '''MODEL'''
+    model = Leafnet()
+
     for i, data in enumerate(train_loader):
-        print(np.shape(data['images']))
-        if i == 3:
+        print(torch.max(data['images'][0]))
+        print(model(data['images']))
+        if i == 0:
             break
 

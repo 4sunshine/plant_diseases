@@ -63,6 +63,7 @@ class PlantDiseaseDataset(Dataset):
         # CONVERT TO PYTORCH CONVENTION:
         # N, C, H, W
         image = np.transpose(image, (2, 0, 1))
+        image = torch.from_numpy(image)
         if self.transform:
             image = self.transform(image)
 
