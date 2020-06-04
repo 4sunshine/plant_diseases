@@ -9,7 +9,7 @@ if __name__ == '__main__':
     '''TESTING SETTINGS'''
     np.random.seed(42)
     random.seed(1000)
-    torch.backends.cudnn.determenistic = True
+    torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(1001)
 
@@ -24,8 +24,8 @@ if __name__ == '__main__':
     '''LOADERS OF DATA'''
     train_loader, test_loader = splitted_loaders(dataset, batch_size=batch_size, train_size=train_size)
 
-    for i, a in enumerate(train_loader):
-        print(a['labels'])
+    for i, data in enumerate(train_loader):
+        print(np.shape(data['images']))
         if i == 3:
             break
 

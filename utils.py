@@ -59,7 +59,10 @@ class PlantDiseaseDataset(Dataset):
         # H, W, [R,G,B]
         # RETURN ONLY RED CHANNEL
         image = np.array(image)[:, :, 0]
-
+        image = np.expand_dims(image, axis=-1)
+        # CONVERT TO PYTORCH CONVENTION:
+        # N, C, H, W
+        image = np.transpose(image, (2, 0, 1))
         if self.transform:
             image = self.transform(image)
 
