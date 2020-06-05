@@ -1,24 +1,25 @@
 import torch
 from torchvision import transforms, utils
-from utils import PlantDiseaseDataset, splitted_loaders
+from dataset import PlantDiseaseDataset, splitted_loaders
 import numpy as np
 import random
 from model import Leafnet
-
+from utils import nonzero_stats, aggregate_stats
+from tqdm import tqdm
 
 if __name__ == '__main__':
     '''TESTING SETTINGS'''
     np.random.seed(42)
-    random.seed(1000)
+    random.seed(1001)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    torch.manual_seed(1001)
+    torch.manual_seed(1002)
 
     '''DATASET PARAMS'''
     dataset_info = '/home/sunshine/irishka/0.3v/json/src_ds.json'
     root_dir = '/home/sunshine/irishka/0.3v/ds/src'
-    batch_size = 16
-    train_size = .75
+    batch_size = 64
+    train_size = 1 #.75
 
     dataset = PlantDiseaseDataset(dataset_info, root_dir)
 
@@ -28,10 +29,7 @@ if __name__ == '__main__':
     '''MODEL'''
     model = Leafnet()
 
-    for i, data in enumerate(train_loader):
-        print(torch.max(data['images'][0]))
-        print(data['images'].shape)
-        print(model(data['images']))
-        if i == 0:
-            break
+    #  CALCULATED PARAMETERS. MEAN NONZERO RED = 85.384; MEAN NONZERO RED STD = 53.798
+    #  m, s = aggregate_stats(train_loader)
+    #
 
