@@ -20,8 +20,28 @@ def statistics(a, axis=(-2, -1)):
     return means, std, maximums, minimums
 
 
-def quantize_stat(a, mean, std, mx, mn):
-    bins = np.array([0, mean-std, mean, mean+std, mx])
+def quantize_axis(a):
+    mean = np.mean(a)
+    print(mean)
+    std = np.std(a)
+    print(std)
+    minima = np.min(a)
+    maxima = np.max(a)
+    # WEAK PLACE!!!
+    # THINK ABOUT BIN
+    bins = [minima, max(mean-std, minima), mean, mean+std, maxima]
+    # CHECK IF ALL ELEMENTS SAME
+    if len(set(bins)) == 1:
+        bins += [minima + 1]
+    # CHECK DIMS
+    print(bins)
+    return np.digitize(a, bins)
+
+
+def quantize_stat(a):
+    a = a.reshape(np.shape(a)[:-2] + (-1,))
+    a = np.apply_along_axis(quantize_axis, -1, a)
+    return np.shape(a)
 
 
 
@@ -60,6 +80,7 @@ class GLCM(nn.Module):
         assert (h == self.images_size[0] + 1) and (w == self.images_size[0] + 1)
         sw = all_sliding_windows(images)
         m, s, mx, mn = statistics(sw)
-        sw_q = quantize_stat(sw, statistics(sw))
-        return np.shape(m)
+        #feat_stats = []
+        sw_q = quantize_stat(sw)
+        return np.shape(sw_q)
 
