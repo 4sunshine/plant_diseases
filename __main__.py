@@ -6,6 +6,8 @@ import random
 from model import Leafnet
 from utils import nonzero_stats, aggregate_stats
 from tqdm import tqdm
+import os
+
 
 if __name__ == '__main__':
     '''TESTING SETTINGS'''
@@ -41,12 +43,32 @@ if __name__ == '__main__':
     train_loader, test_loader = splitted_loaders(dataset, batch_size=batch_size, train_size=train_size)
 
     '''MODEL'''
-    model = Leafnet(bins=bins, global_mean=mean, global_std=std, n_jobs=n_jobs)
+    model = Leafnet(bins=bins, global_mean=mean, global_std=std, n_jobs=n_jobs, dist=glcm_d,
+                    theta=glcm_t, levels=glcm_l)
+
+    state = {'features': [], 'labels': [], 'paths': []}
 
     with tqdm(total=len(train_loader)) as pbar:
         for i, data in enumerate(train_loader):
-            output = model(data['images'])
-            if i == 0:
-                break
+            #output = model(data['images'])
+            state['features'] += [model(data['images'])]
+            state['labels'] += data['labels']
+            state['paths'] += data['paths']
             pbar.update(1)
+
+    torch.save(state, os.path.join(root_dir, 'train_features.pth'))
+    print('Train Features Saved!')
+
+    state = {'features': [], 'labels': [], 'paths': []}
+
+    with tqdm(total=len(test_loader)) as pbar:
+        for i, data in enumerate(test_loader):
+            #output = model(data['images'])
+            state['features'] += [model(data['images'])]
+            state['labels'] += data['labels']
+            state['paths'] += data['paths']
+            pbar.update(1)
+
+    torch.save(state, os.path.join(root_dir, 'test_features.pth'))
+    print('Test Features Saved!')
 

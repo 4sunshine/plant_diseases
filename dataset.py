@@ -70,5 +70,5 @@ class PlantDiseaseDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return {'images': image, 'labels': self.labels[idx], 'path': img_name}
+        return {'images': image, 'labels': self.labels[idx], 'paths': img_name}
 

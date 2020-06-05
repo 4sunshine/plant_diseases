@@ -28,6 +28,7 @@ def statistics(a, g_mean, g_std, axis=(-2, -1)):
     return torch.cat([means_, std, maximums, minimums], dim=1)
 
 
+#  NOT USED
 def quantize_axis(a):
     mean = np.mean(a)
     print(mean)
@@ -46,6 +47,7 @@ def quantize_axis(a):
     return np.digitize(a, bins)
 
 
+#  NOT USED
 def quantize_stat(a):
     a = a.reshape(np.shape(a)[:-2] + (-1,))
     a = np.apply_along_axis(quantize_axis, -1, a)
@@ -65,22 +67,33 @@ class Leafnet(nn.Module):
         #self.linear2 = nn.Linear(H, D_out)
 
     def forward(self, x):
+        # x = TENSOR OF SHAPE: B, 1, H, W, MaskY, MaskX
+
         x = self.sw_layer(x)
+
         # s = TENSOR OF SHAPE: B, 4, H, W
         # DIM 1: [MEAN, STD, MAX, MIN]
+
         s = self.stat_layer(x)
+
         # q = QUANTIZED TENSOR OF SHAPE: B, 1, H, W, MaskY, MaskX
+
         q = self.q_layer(x)
+
         # g = GLCM PROPERTIES OF SHAPE: B, Nprop, H, W
-        # DIM 1: [SEE GLCM PARAMS]
+        # DIM 1: [HIST, *GLCM PARAMS]
+
         g = self.glcm(q)
-        print(np.shape(g))
-        #x = torch.cat([s, q], dim=1)
+
+        # x = TENSOR OF SHAPE B, C, H, W
+        # DIM 1: [STAT PROPS, HIST, GLCM PARAMS]
+        x = torch.cat([s, g], dim=1)
+
         return x
 
 
 class GLCM(nn.Module):
-    """ GLCM PARALLEL """
+    """ GLCM PARALLEL! CONTAINS HIST CALCULATION """
     def __init__(self, dist, theta, levels, n_jobs=8):
         super().__init__()
         self.n_jobs = n_jobs
@@ -92,7 +105,13 @@ class GLCM(nn.Module):
         g = greycomatrix(q, self.dist, self.theta, self.levels, normed=True, symmetric=True)
         properties = ('contrast', 'dissimilarity', 'homogeneity', 'energy', 'correlation', 'ASM')
         props = np.array([greycoprops(g, p) for p in properties]).reshape(-1)
-        return props.reshape(-1)
+        # CALCULATE HIST HERE
+        if np.max(q) > 0:
+            hist, _ = np.histogram(q.reshape(-1), bins=np.arange(1, self.levels+1), density=True)
+        else:
+            hist = np.zeros(self.levels - 1)
+        props = props.reshape(-1)
+        return np.concatenate([hist, props], axis=0)
 
     def forward(self, q):
         sh = np.shape(q)
