@@ -20,6 +20,7 @@ if __name__ == '__main__':
     root_dir = '/home/sunshine/irishka/0.3v/ds/src'
     batch_size = 32
     train_size = .75
+    n_jobs = 8  # N JOBS FOR GLCM
     #  STATISTICS FOR QUANTIZATION  ##################################################
     #  CALCULATED PARAMETERS. MEAN NONZERO RED = 85.384; MEAN NONZERO RED STD = 53.798
     #  m, s = aggregate_stats(train_loader)
@@ -29,13 +30,18 @@ if __name__ == '__main__':
     std = 53.798
     bins = np.array([.0, .5, mean-std, mean, mean+std], dtype='float32')
 
+    #  GLCM PROPERTIES
+    glcm_d = [1, 3, 5]
+    glcm_t = [0, np.pi / 4, np.pi / 2, 3 * np.pi / 4]
+    glcm_l = np.shape(bins)[0]
+
     dataset = PlantDiseaseDataset(dataset_info, root_dir)
 
     '''LOADERS OF DATA'''
     train_loader, test_loader = splitted_loaders(dataset, batch_size=batch_size, train_size=train_size)
 
     '''MODEL'''
-    model = Leafnet(bins=bins, global_mean=mean, global_std=std)
+    model = Leafnet(bins=bins, global_mean=mean, global_std=std, n_jobs=n_jobs)
 
     with tqdm(total=len(train_loader)) as pbar:
         for i, data in enumerate(train_loader):

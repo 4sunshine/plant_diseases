@@ -1,6 +1,8 @@
 import numpy as np
 import torch.nn as nn
 import torch
+from skimage.feature import greycomatrix, greycoprops
+from joblib import delayed, Parallel
 
 
 def all_sliding_windows(a, stride=[4, 4], mask_size=[17, 17]):
@@ -52,32 +54,55 @@ def quantize_stat(a):
 
 class Leafnet(nn.Module):
     """REQUIRES TENSOR INPUT"""
-    def __init__(self, bins, global_mean, global_std):
+    def __init__(self, bins, global_mean, global_std, dist, theta, levels, n_jobs):
         super().__init__()
 
         # LAYERS
         self.sw_layer = SlidingWindows()
         self.stat_layer = StatLayer(g_mean=global_mean, g_std=global_std)
         self.q_layer = Quantizer(bins=bins)
+        self.glcm = GLCM(n_jobs=n_jobs, dist=dist, theta=theta, levels=levels)
         #self.linear2 = nn.Linear(H, D_out)
 
     def forward(self, x):
         x = self.sw_layer(x)
-        # S = TENSOR OF SHAPE: B, 4, H, W
+        # s = TENSOR OF SHAPE: B, 4, H, W
         # DIM 1: [MEAN, STD, MAX, MIN]
         s = self.stat_layer(x)
+        # q = QUANTIZED TENSOR OF SHAPE: B, 1, H, W, MaskY, MaskX
         q = self.q_layer(x)
+        # g = GLCM PROPERTIES OF SHAPE: B, Nprop, H, W
+        # DIM 1: [SEE GLCM PARAMS]
+        g = self.glcm(q)
+        print(np.shape(g))
         #x = torch.cat([s, q], dim=1)
         return x
 
 
-class SlidingWindows(nn.Module):
-    """ Custom Linear layer but mimics a standard linear layer """
-    def __init__(self, mask_size=[17, 17], stride=[4, 4], images_size=[256, 256]):
+class GLCM(nn.Module):
+    """ GLCM PARALLEL """
+    def __init__(self, dist, theta, levels, n_jobs=8):
         super().__init__()
-        assert (mask_size[0] % 2 == 1) and (mask_size[1] % 2 == 1)
-        mask_size = torch.Tensor(mask_size)
-        self.mask_size = nn.Parameter(mask_size, requires_grad=False)
+        self.n_jobs = n_jobs
+        self.dist = dist
+        self.theta = theta
+        self.levels = levels
+
+    def glcm_prop(self, q):
+        g = greycomatrix(q, self.dist, self.theta, self.levels, normed=True, symmetric=True)
+        properties = ('contrast', 'dissimilarity', 'homogeneity', 'energy', 'correlation', 'ASM')
+        props = np.array([greycoprops(g, p) for p in properties]).reshape(-1)
+        return props.reshape(-1)
+
+    def forward(self, q):
+        sh = np.shape(q)
+        gc = q.reshape((-1,) + sh[-2:])
+        gcs = Parallel(n_jobs=self.n_jobs)(delayed(self.glcm_prop)(img) for img in gc)
+        gcs = np.stack(gcs, axis=0)
+        gcs = gcs.reshape(sh[:-2] + (-1,))
+        gcs = gcs.transpose(0, -1, 2, 3, 1)
+        gcs = gcs.squeeze(-1)
+        return torch.from_numpy(gcs)
 
 
 class SlidingWindows(nn.Module):
