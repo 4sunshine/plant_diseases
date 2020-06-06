@@ -12,33 +12,27 @@ def splitted_loaders(dataset, train_size, batch_size):
     indices = list(range(dataset_size))
     split = int(np.floor(train_size * dataset_size))
     np.random.shuffle(indices)
-    train_indices, val_indices = indices[:split], indices[split:]
+    train_indices, test_indices = indices[:split], indices[split:]
 
     # Creating PT data samplers and loaders:
     train_sampler = SubsetRandomSampler(train_indices)
-    valid_sampler = SubsetRandomSampler(val_indices)
+    test_sampler = SubsetRandomSampler(test_indices)
 
     train_loader = DataLoader(dataset, batch_size=batch_size,
                               sampler=train_sampler, shuffle=False)
     test_loader = DataLoader(dataset, batch_size=batch_size,
-                             sampler=valid_sampler, shuffle=False)
+                             sampler=test_sampler, shuffle=False)
     return train_loader, test_loader
 
 
-# def shuffled_arrays(a, b):
-#     assert len(a) == len(b)
-#     p = np.random.permutation(len(a))
-#     return a[p.astype(int)], b[p.astype(int)]
-
-
 class PlantDiseaseDataset(Dataset):
-
     def __init__(self, json_file, root_dir, transform=None):
         self.root = root_dir
         self.transform = transform
         self.paths, self.labels, self.map = self._load_info(json_file)
 
-    def _load_info(self, json_file):
+    @staticmethod
+    def _load_info(json_file):
         with open(json_file) as f:
             data = json.load(f)
         paths = [os.path.join(data['group_names'][g], f) for f, g in

@@ -64,7 +64,6 @@ class Leafnet(nn.Module):
         self.stat_layer = StatLayer(g_mean=global_mean, g_std=global_std)
         self.q_layer = Quantizer(bins=bins)
         self.glcm = GLCM(n_jobs=n_jobs, dist=dist, theta=theta, levels=levels)
-        #self.linear2 = nn.Linear(H, D_out)
 
     def forward(self, x):
         # x = TENSOR OF SHAPE: B, 1, H, W, MaskY, MaskX
@@ -87,6 +86,7 @@ class Leafnet(nn.Module):
 
         # x = TENSOR OF SHAPE B, C, H, W
         # DIM 1: [STAT PROPS, HIST, GLCM PARAMS]
+
         x = torch.cat([s, g], dim=1)
 
         return x
