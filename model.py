@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch
 from skimage.feature import greycomatrix, greycoprops
 from joblib import delayed, Parallel
+import torch.nn as nn
 
 
 def all_sliding_windows(a, stride=[4, 4], mask_size=[17, 17]):
@@ -52,6 +53,22 @@ def quantize_stat(a):
     a = a.reshape(np.shape(a)[:-2] + (-1,))
     a = np.apply_along_axis(quantize_axis, -1, a)
     return np.shape(a)
+
+
+class FeatureOperator(nn.Module):
+    """REQUIRES TENSOR INPUT"""
+    def __init__(self, kernel_size):
+        super().__init__()
+        # LAYERS
+        self.a_pool = nn.AvgPool2d(kernel_size)
+        self.m_pool = nn.MaxPool2d(kernel_size)
+
+    def forward(self, x):
+        a = self.a_pool(x)
+        m = self.m_pool(x)
+        x = torch.cat([a, m], dim=1)
+        x = torch.squeeze(x)
+        return x
 
 
 class Leafnet(nn.Module):
@@ -158,7 +175,6 @@ class StatLayer(nn.Module):
 
 
 class Quantizer(nn.Module):
-    """ Custom Linear layer but mimics a standard linear layer """
     def __init__(self, bins):
         super().__init__()
         bins = torch.from_numpy(bins)

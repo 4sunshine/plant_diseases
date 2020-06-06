@@ -66,3 +66,19 @@ class PlantDiseaseDataset(Dataset):
 
         return {'images': image, 'labels': self.labels[idx], 'paths': img_name}
 
+
+class RawFeaturesDataset(Dataset):
+    def __init__(self, data_file):
+        # data file must contain state dict: {'features': [], 'labels': [], 'paths': []}
+        data = torch.load(data_file)
+        self.paths = data['paths']
+        self.labels = data['labels']
+        self.features = torch.cat(data['features'], dim=0)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, i):
+        return {'features': self.features[i], 'labels': self.labels[i], 'paths': self.paths[i]}
+
+
