@@ -57,16 +57,18 @@ def quantize_stat(a):
 
 class FeatureOperator(nn.Module):
     """REQUIRES TENSOR INPUT"""
-    def __init__(self, kernel_size):
+    def __init__(self, kernel_size, n_channels=80):
         super().__init__()
-        # LAYERS
-        self.a_pool = nn.AvgPool2d(kernel_size)
-        self.m_pool = nn.MaxPool2d(kernel_size)
+        #  LAYERS
+        #  sharpen = [[0, -1, 0], [-1, 5, -1], [0, -1, 0]] 33%, sobel 22%
+        #  sobel_kernel = torch.DoubleTensor(sobel).expand(n_channels, n_channels, 3, 3)
+        #  self.conv = nn.Conv2d(n_channels, n_channels, 3, bias=False)
+        #  self.conv.weight = nn.Parameter(sobel_kernel, requires_grad=False)
+        self.a_pool = nn.AvgPool2d(kernel_size-2)
 
     def forward(self, x):
-        a = self.a_pool(x)
-        m = self.m_pool(x)
-        x = torch.cat([a, m], dim=1)
+        #  x = self.conv(x)  # BAD RESULTS
+        x = self.a_pool(x)
         x = torch.squeeze(x)
         return x
 
