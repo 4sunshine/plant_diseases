@@ -82,11 +82,7 @@ def whiten_data(data):
 
 
 def best_result(f, file=None, over_params=[], **kwargs):
-#    results = []
     results = Parallel(n_jobs=8)(delayed(f)(a, **kwargs) for a in tqdm(over_params))
-        # for a in over_params:
-        #     results += [f(a, **kwargs)]
-        #     pbar.update(1)
     max_result = max(results)
     best_arg = over_params[results.index(max_result)]
     if file:
@@ -106,7 +102,6 @@ def train_and_test(ind, clf, train_file, test_file, center=True, whiten=True):
     if whiten:
         train_features = whiten_data(train_features)
         test_features = whiten_data(test_features)
-
     clf.fit(train_features, train_labels)
     prediction = clf.predict(test_features)
     return accuracy_score(test_labels, prediction)
