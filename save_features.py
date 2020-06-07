@@ -56,7 +56,7 @@ if __name__ == '__main__':
             state['paths'] += data['paths']
             pbar.update(1)
 
-    torch.save(state, os.path.join(root_dir, 'train_features.pth'))
+    torch.save(state, os.path.join(root_dir, 'train_global_features.pth'))
     print('Train Features Saved!')
 
     state = {'features': [], 'labels': [], 'paths': []}
@@ -69,6 +69,6 @@ if __name__ == '__main__':
             state['paths'] += data['paths']
             pbar.update(1)
 
-    torch.save(state, os.path.join(root_dir, 'test_features.pth'))
+    torch.save(state, os.path.join(root_dir, 'test_global_features.pth'))
     print('Test Features Saved!')
 

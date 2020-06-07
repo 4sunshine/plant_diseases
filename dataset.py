@@ -7,6 +7,13 @@ import numpy as np
 from torch.utils.data.sampler import SubsetRandomSampler
 
 
+def features_labels(file):
+    dataset = torch.load(file)
+    features = dataset['features']
+    labels = dataset['labels']
+    return features, labels
+
+
 def splitted_loaders(dataset, train_size, batch_size):
     dataset_size = len(dataset)
     indices = list(range(dataset_size))

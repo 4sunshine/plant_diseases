@@ -6,7 +6,7 @@ from joblib import delayed, Parallel
 import torch.nn as nn
 
 
-def all_sliding_windows(a, stride=[4, 4], mask_size=[17, 17]):
+def all_sliding_windows(a, stride=[1, 1], mask_size=[257, 257]):
     """RETURNS ARRAY OF SHAPE (B, C, Nx, Ny, MaskX, MaskY)"""
     shape = a.shape[:-2] + ((a.shape[-2] - mask_size[-2]) // stride[-2] + 1, ) + \
             ((a.shape[-1] - mask_size[-1]) // stride[-1] + 1,) + tuple(mask_size)
@@ -64,7 +64,7 @@ class FeatureOperator(nn.Module):
         #  sobel_kernel = torch.DoubleTensor(sobel).expand(n_channels, n_channels, 3, 3)
         #  self.conv = nn.Conv2d(n_channels, n_channels, 3, bias=False)
         #  self.conv.weight = nn.Parameter(sobel_kernel, requires_grad=False)
-        self.a_pool = nn.AvgPool2d(kernel_size-2)
+        self.a_pool = nn.AvgPool2d(kernel_size)
 
     def forward(self, x):
         #  x = self.conv(x)  # BAD RESULTS
