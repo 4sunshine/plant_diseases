@@ -16,8 +16,8 @@ torch.backends.cudnn.benchmark = False
 torch.manual_seed(1002)
 
 root_dir = '/home/sunshine/irishka/0.3v/ds/src'
-train_data = os.path.join(root_dir, 'train_global_features.pth')
-test_data = os.path.join(root_dir, 'test_global_features.pth')
+train_data = os.path.join(root_dir, 'train_features.pth')
+test_data = os.path.join(root_dir, 'test_features.pth')
 
 train_dataset = RawFeaturesDataset(train_data)
 test_dataset = RawFeaturesDataset(test_data)
@@ -28,7 +28,7 @@ test_loader = DataLoader(test_dataset, batch_size=256, shuffle=True)
 state = {'features': [], 'labels': [], 'paths': []}
 
 with torch.no_grad():
-    model = FeatureOperator(1)
+    model = FeatureOperator(61)
     model.eval()
 
     with tqdm(total=len(train_loader)) as pbar:
@@ -40,7 +40,7 @@ with torch.no_grad():
             pbar.update(1)
 
         state['features'] = torch.cat(state['features'], dim=0)
-        torch.save(state, os.path.join(root_dir, 'train_global_pooled.pth'))
+        torch.save(state, os.path.join(root_dir, 'train_average_pooled.pth'))
         print('Train Features Saved!')
 
     state = {'features': [], 'labels': [], 'paths': []}
@@ -54,6 +54,6 @@ with torch.no_grad():
             pbar.update(1)
 
         state['features'] = torch.cat(state['features'], dim=0)
-        torch.save(state, os.path.join(root_dir, 'test_global_pooled.pth'))
+        torch.save(state, os.path.join(root_dir, 'test_average_pooled.pth'))
         print('Test Features Saved!')
 

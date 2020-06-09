@@ -6,7 +6,7 @@ from joblib import delayed, Parallel
 import torch.nn as nn
 
 
-def all_sliding_windows(a, stride=[1, 1], mask_size=[257, 257]):
+def all_sliding_windows(a, stride=[1, 1], mask_size=[61, 61]):
     """RETURNS ARRAY OF SHAPE (B, C, Nx, Ny, MaskX, MaskY)"""
     shape = a.shape[:-2] + ((a.shape[-2] - mask_size[-2]) // stride[-2] + 1, ) + \
             ((a.shape[-1] - mask_size[-1]) // stride[-1] + 1,) + tuple(mask_size)
@@ -53,6 +53,20 @@ def quantize_stat(a):
     a = a.reshape(np.shape(a)[:-2] + (-1,))
     a = np.apply_along_axis(quantize_axis, -1, a)
     return np.shape(a)
+
+
+class GLCMeR(nn.Module):
+    def __init__(self, dist, theta, levels, bins):
+        super().__init__()
+        self.quant = Quantizer(bins=bins)
+        self.glcm = PureGLCM(dist=dist, theta=theta, levels=levels)
+
+    def forward(self, x):
+        x = x.numpy()
+        x = self.quant(x)
+        sx = [self.glcm(s[0,:,:]) for s in x]
+        sx = torch.tensor(sx)
+        return sx
 
 
 class FeatureOperator(nn.Module):
@@ -122,14 +136,16 @@ class GLCM(nn.Module):
 
     def glcm_prop(self, q):
         g = greycomatrix(q, self.dist, self.theta, self.levels, normed=True, symmetric=True)
-        properties = ('contrast', 'dissimilarity', 'homogeneity', 'energy', 'correlation', 'ASM')
+        properties = ('contrast', 'homogeneity', 'energy', 'correlation')
         props = np.array([greycoprops(g, p) for p in properties]).reshape(-1)
+        entropy = -np.sum(np.multiply(g, np.log2(g+1e-8)), axis=(0, 1)).reshape(-1)
+        props = np.concatenate([props, entropy], axis=0)
         # CALCULATE HIST HERE
         if np.max(q) > 0:
             hist, _ = np.histogram(q.reshape(-1), bins=np.arange(1, self.levels+1), density=True)
         else:
             hist = np.zeros(self.levels - 1)
-        props = props.reshape(-1)
+        #props = props.reshape(-1)
         return np.concatenate([hist, props], axis=0)
 
     def forward(self, q):
@@ -141,6 +157,18 @@ class GLCM(nn.Module):
         gcs = gcs.transpose(0, -1, 2, 3, 1)
         gcs = gcs.squeeze(-1)
         return torch.from_numpy(gcs)
+
+
+class PureGLCM(nn.Module):
+    def __init__(self, dist, theta, levels):
+        super().__init__()
+        self.dist = dist
+        self.theta = theta
+        self.levels = levels
+
+    def forward(self, x):
+        x = greycomatrix(x, self.dist, self.theta, self.levels, normed=True, symmetric=True)
+        return x.reshape(self.levels ** 2, -1)
 
 
 class SlidingWindows(nn.Module):

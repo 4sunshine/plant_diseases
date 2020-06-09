@@ -3,11 +3,13 @@ from tqdm import tqdm
 from dataset import features_labels
 from sklearn.metrics import accuracy_score
 from joblib import delayed, Parallel
+from dataset import PlantDiseaseDataset
+from sklearn.metrics import precision_recall_fscore_support
 
 
 # ALL GLCM PROPERTIES AND DISTANCES
-glcm_params = {'props': ('contrast', 'dissimilarity', 'homogeneity', 'energy', 'correlation', 'ASM'),
-               'dists': (1, 3, 5),
+glcm_params = {'props': ('contrast', 'homogeneity', 'energy', 'correlation'),
+               'dists': (1, 2, 4),
                'thetas': (0, 1, 2, 3)}  # in units of Pi/4
 
 
@@ -82,7 +84,9 @@ def whiten_data(data):
 
 
 def best_result(f, file=None, over_params=[], **kwargs):
-    results = Parallel(n_jobs=8)(delayed(f)(a, **kwargs) for a in tqdm(over_params))
+    #results = Parallel(n_jobs=8)(delayed(f)(a, **kwargs) for a in tqdm(over_params))
+    #results = [f(a, **kwargs) for a in over_params]
+    results = f(over_params, **kwargs)  # MANUAL SET
     max_result = max(results)
     best_arg = over_params[results.index(max_result)]
     if file:
@@ -90,19 +94,48 @@ def best_result(f, file=None, over_params=[], **kwargs):
     return max_result, best_arg
 
 
-def train_and_test(ind, clf, train_file, test_file, center=True, whiten=True):
+def train_and_test(ind, clf, train_file, test_file, dataset, data_f, center=True, whiten=True):
+
     train_features, train_labels = features_labels(train_file)
     test_features, test_labels = features_labels(test_file)
+    print('TRAIN SA')
+    print(train_features.shape)
     if ind:
         train_features = train_features[:, ind]
         test_features = test_features[:, ind]
+        print('TMEAN SA')
+        print(train_features.shape)
     if center:
         train_features = center_data(train_features)
         test_features = center_data(test_features)
+        print('TMEAN SA')
+        print(train_features.shape)
     if whiten:
         train_features = whiten_data(train_features)
         test_features = whiten_data(test_features)
+        print('TMEAN SA')
+        print(train_features.shape)
+    print('PREFIT')
+    print(train_features.shape)
     clf.fit(train_features, train_labels)
     prediction = clf.predict(test_features)
-    return accuracy_score(test_labels, prediction)
+
+    pr, rec, fs, sup = precision_recall_fscore_support(test_labels, prediction, labels=sorted(set(test_labels)))
+
+    di = {'Precision':pr, 'Recall':rec, 'F-Score':fs}
+
+    for i, l in enumerate(sorted(set(test_labels))):
+        for k, v in di.items():
+            key = k+' '+str(dataset.label_map(l))
+            if key not in data_f.keys():
+                data_f[key] = []
+            data_f[key] += [v[i]]
+
+    print(data_f)
+    return accuracy_score(test_labels, prediction), data_f
+
+def save_metrics(prediction, test_labels):
+    m = ('precision', 'recall', 'f-score') * len(set(test_labels))
+    pr, rec, fs, sup = precision_recall_fscore_support(test_labels, prediction, labels=sorted(set(test_labels)))
+    return None
 

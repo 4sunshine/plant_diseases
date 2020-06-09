@@ -11,6 +11,8 @@ def features_labels(file):
     dataset = torch.load(file)
     features = dataset['features']
     labels = dataset['labels']
+    #features = [f.numpy() for f in features]
+    labels = [l.item() for l in labels]
     return features, labels
 
 
