@@ -79,7 +79,7 @@ for c, name in tqdm(zip(clf, clf_list)):
             torch.save(data, file_to_store)
 
 df = pd.DataFrame(data=data)
-df.to_excel(os.path.join(root_dir, 'BIG_CLF.xlsx'))
+df.to_excel(os.path.join(root_dir, 'BIG_CLF_BINARY_HEALTHY1.xlsx'))
 
 print(f'Best accuracy: {100*best_acc:.2f}%')
 print(f'Best params: {best_params}')

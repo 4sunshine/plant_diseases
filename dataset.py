@@ -12,7 +12,8 @@ def features_labels(file):
     features = dataset['features']
     labels = dataset['labels']
     #features = [f.numpy() for f in features]
-    labels = [l.item() for l in labels]
+    #labels = [l.item() for l in labels]
+    labels = [1 if (l.item()==5) else 0 for l in labels]
     return features, labels
 
 
