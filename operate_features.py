@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 import random
 from tqdm import tqdm
 from model import FeatureOperator
+import torchvision
 
 
 '''TESTING SETTINGS'''
@@ -28,32 +29,35 @@ test_loader = DataLoader(test_dataset, batch_size=256, shuffle=True)
 state = {'features': [], 'labels': [], 'paths': []}
 
 with torch.no_grad():
-    model = FeatureOperator(61)
+    model = FeatureOperator(1)
     model.eval()
 
     with tqdm(total=len(train_loader)) as pbar:
         for i, data in enumerate(train_loader):
+
             # output = model(data['images'])
             state['features'] += [model(data['features'])]
             state['labels'] += data['labels']
             state['paths'] += data['paths']
             pbar.update(1)
-
-        state['features'] = torch.cat(state['features'], dim=0)
-        torch.save(state, os.path.join(root_dir, 'train_average_pooled.pth'))
-        print('Train Features Saved!')
-
-    state = {'features': [], 'labels': [], 'paths': []}
-
-    with tqdm(total=len(test_loader)) as pbar:
-        for i, data in enumerate(test_loader):
-            # output = model(data['images'])
-            state['features'] += [model(data['features'])]
-            state['labels'] += data['labels']
-            state['paths'] += data['paths']
-            pbar.update(1)
-
-        state['features'] = torch.cat(state['features'], dim=0)
-        torch.save(state, os.path.join(root_dir, 'test_average_pooled.pth'))
-        print('Test Features Saved!')
-
+            if i==20:
+                break
+    #
+    #     state['features'] = torch.cat(state['features'], dim=0)
+    #     torch.save(state, os.path.join(root_dir, 'train_global_pooled.pth'))
+    #     print('Train Features Saved!')
+    #
+    # state = {'features': [], 'labels': [], 'paths': []}
+    #
+    # with tqdm(total=len(test_loader)) as pbar:
+    #     for i, data in enumerate(test_loader):
+    #         # output = model(data['images'])
+    #         state['features'] += [model(data['features'])]
+    #         state['labels'] += data['labels']
+    #         state['paths'] += data['paths']
+    #         pbar.update(1)
+    #
+    #     state['features'] = torch.cat(state['features'], dim=0)
+    #     torch.save(state, os.path.join(root_dir, 'test_global_pooled.pth'))
+    #     print('Test Features Saved!')
+    #

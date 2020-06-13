@@ -14,6 +14,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from dataset import PlantDiseaseDataset
 import pandas as pd
+from io import StringIO
+
+from sklearn.datasets import load_iris
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
+#from sklearn.tree.export import export_graphviz
+from sklearn.feature_selection import mutual_info_classif
 
 # ALL GLCM PROPERTIES AND DISTANCES
 glcm_params = {'props': ('contrast', 'homogeneity', 'energy', 'correlation', 'entropy'),
@@ -30,8 +36,8 @@ ind = [list(range(68)), list(range(4)), list(range(8)), list(range(8, 68))]
 
 root_dir = '/home/sunshine/irishka/0.3v/ds/src'
 
-train_file = os.path.join(root_dir, 'train_average_pooled.pth')
-test_file = os.path.join(root_dir, 'test_average_pooled.pth')
+train_file = os.path.join(root_dir, 'train_global_pooled.pth')
+test_file = os.path.join(root_dir, 'test_global_pooled.pth')
 dump_file = os.path.join(root_dir, 'dump_thetas_avgpooled.pth')
 dump_file = None
 file_to_store = os.path.join(root_dir, 'all_clf.pth')
@@ -49,26 +55,51 @@ dataset = PlantDiseaseDataset(dataset_info, root_dir)
 clf_list = ['Decision Tree', 'Support Vector Machine', 'Random Forest',
             'K Nearest Neighbors', '1 Layer MLP']
 clf = []
-clf.append(DecisionTreeClassifier(random_state=0, splitter='best', criterion='entropy', max_depth=10))
-clf.append(SVC(gamma='auto', kernel='linear', C=5, shrinking=True))
-clf.append(RandomForestClassifier(max_depth=10, random_state=0, criterion='entropy', n_jobs=8, n_estimators=250))
-clf.append(KNeighborsClassifier(n_neighbors=11, n_jobs=8, metric='euclidean'))
-clf.append(MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto',
-                    beta_1=0.9, beta_2=0.999, early_stopping=False, epsilon=1e-08,
-                    hidden_layer_sizes=(200,), learning_rate='constant',
-                    learning_rate_init=0.001, max_fun=15000, max_iter=10000,
-                    momentum=0.9, n_iter_no_change=10, nesterovs_momentum=True,
-                    power_t=0.5, random_state=1, shuffle=True, solver='adam',
-                    tol=0.0001, validation_fraction=0.1, verbose=False,
-                    warm_start=False))
+clf.append(DecisionTreeClassifier(random_state=0, splitter='best', criterion='entropy', max_depth=3))
 
-stats = ['FEATURE', 'STAT', 'STAT+HIST', 'GLCM']
+# clf.append(SVC(gamma='auto', kernel='linear', C=5, shrinking=True))
+# clf.append(RandomForestClassifier(max_depth=10, random_state=0, criterion='entropy', n_jobs=8, n_estimators=250))
+# clf.append(KNeighborsClassifier(n_neighbors=11, n_jobs=8, metric='euclidean'))
+# clf.append(MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto',
+#                     beta_1=0.9, beta_2=0.999, early_stopping=False, epsilon=1e-08,
+#                     hidden_layer_sizes=(200,), learning_rate='constant',
+#                     learning_rate_init=0.001, max_fun=15000, max_iter=10000,
+#                     momentum=0.9, n_iter_no_change=10, nesterovs_momentum=True,
+#                     power_t=0.5, random_state=1, shuffle=True, solver='adam',
+#                     tol=0.0001, validation_fraction=0.1, verbose=False,
+#                     warm_start=False))
 
-data = {'name':[], 'stats':[], 'standartize':[]}
+# stats = ['FEATURE', 'STAT', 'STAT+HIST', 'GLCM']
+# ind = [list(range(68)), list(range(4)), list(range(8)), list(range(8, 68))]
+#
+# stats = ['STAT']
+# ind = [list(range(4))]
+#
+#
+# data = {'name':[], 'stats':[], 'standartize':[]}
+#
+
+
+data = {'name': [], 'stats': [], 'standartize': []}
+root_dir = '/home/sunshine/irishka/0.3v/ds/src'
+
+train_file = os.path.join(root_dir, 'train_global_pooled.pth')
+test_file = os.path.join(root_dir, 'test_global_pooled.pth')
+dump_file = os.path.join(root_dir, 'dump_thetas_avgpooled.pth')
+
+dataset_info = '/home/sunshine/irishka/0.3v/json/src_ds.json'
+root_dir = '/home/sunshine/irishka/0.3v/ds/src'
+dataset = PlantDiseaseDataset(dataset_info, root_dir)
+stats = ['STAT']
+ind = [list(range(4))]
+
+clf_list = ['Decision Tree']
+clf = []
+clf.append(DecisionTreeClassifier(random_state=0, splitter='best', criterion='entropy', max_depth=11))
 
 for c, name in tqdm(zip(clf, clf_list)):
     for i, s in enumerate(stats):
-        for w in [True, False]:
+        for w in [False]:
             data['name'] += [name]
             data['stats'] += [s]
             data['standartize'] += [w]
@@ -76,14 +107,17 @@ for c, name in tqdm(zip(clf, clf_list)):
                                                       train_file=train_file, test_file=test_file, dataset=dataset,
                                                       data_f=data,
                                                       whiten=w, center=True)
-            torch.save(data, file_to_store)
-
+out = StringIO()
+out = export_graphviz(c, out_file='tree.dot')
 df = pd.DataFrame(data=data)
-df.to_excel(os.path.join(root_dir, 'BIG_CLF_BINARY_HEALTHY1.xlsx'))
+df.to_excel(os.path.join(root_dir, 'BIN_CLF_TREE.xlsx'))
+            #torch.save(data, file_to_store)
 
-print(f'Best accuracy: {100*best_acc:.2f}%')
-print(f'Best params: {best_params}')
-print('****************')
+
+#
+# print(f'Best accuracy: {100*best_acc:.2f}%')
+# print(f'Best params: {best_params}')
+# print('****************')
 
 
 

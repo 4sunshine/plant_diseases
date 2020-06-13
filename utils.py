@@ -121,7 +121,8 @@ def train_and_test(ind, clf, train_file, test_file, dataset, data_f, center=True
             data_f[key] = []
         data_f[key] += [v]
 
-
+    # pr, rec, fs, sup = precision_recall_fscore_support(test_labels, prediction, zero_division=0,
+    #                                                    labels=sorted(set(test_labels)))
     # di = {'Precision':pr, 'Recall':rec, 'F-Score':fs}
     #
     # for i, l in enumerate(sorted(set(test_labels))):

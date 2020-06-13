@@ -6,7 +6,7 @@ from joblib import delayed, Parallel
 import torch.nn as nn
 
 
-def all_sliding_windows(a, stride=[1, 1], mask_size=[61, 61]):
+def all_sliding_windows(a, stride=[4, 4], mask_size=[17, 17]):
     """RETURNS ARRAY OF SHAPE (B, C, Nx, Ny, MaskX, MaskY)"""
     shape = a.shape[:-2] + ((a.shape[-2] - mask_size[-2]) // stride[-2] + 1, ) + \
             ((a.shape[-1] - mask_size[-1]) // stride[-1] + 1,) + tuple(mask_size)
@@ -173,7 +173,7 @@ class PureGLCM(nn.Module):
 
 class SlidingWindows(nn.Module):
     """ Custom Linear layer but mimics a standard linear layer """
-    def __init__(self, mask_size=[17, 17], stride=[4, 4], images_size=[256, 256]):
+    def __init__(self, mask_size=[257, 257], stride=[1, 1], images_size=[256, 256]):
         super().__init__()
         assert (mask_size[0] % 2 == 1) and (mask_size[1] % 2 == 1)
         mask_size = torch.Tensor(mask_size)

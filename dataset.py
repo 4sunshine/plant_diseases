@@ -13,7 +13,7 @@ def features_labels(file):
     labels = dataset['labels']
     #features = [f.numpy() for f in features]
     #labels = [l.item() for l in labels]
-    labels = [1 if (l.item()==5) else 0 for l in labels]
+    labels = [0 if (l.item()==5) else 1 for l in labels]
     return features, labels
 
 
@@ -37,7 +37,7 @@ def splitted_loaders(dataset, train_size, batch_size):
 
 class PlantDiseaseDataset(Dataset):
     def __init__(self, json_file, root_dir, transform=None):
-        self.root = root_dir
+        self.root = ''  #root_dir
         self.transform = transform
         self.paths, self.labels, self.map = self._load_info(json_file)
 
@@ -45,9 +45,11 @@ class PlantDiseaseDataset(Dataset):
     def _load_info(json_file):
         with open(json_file) as f:
             data = json.load(f)
-        paths = [os.path.join(data['group_names'][g], f) for f, g in
-                 zip(data['image_names'], data['group_id'])]
-        return paths, data['group_id'], {k: v for k, v in enumerate(data['group_names'])}
+        #paths = [os.path.join(data['group_names'][g], f) for f, g in
+        #         zip(data['image_names'], data['group_id'])]
+        return ['/home/sunshine/irishka/0.3v/ds/src/Tomato___healthy/image (7).jpg',
+                '/home/sunshine/irishka/0.3v/ds/src/Tomato___Bacterial_spot/image (9).jpg'], [0,1], {0:'healthy',1:'diseased'}
+        #return paths, data['group_id'], {k: v for k, v in enumerate(data['group_names'])}
 
     def label_map(self, label):
         return self.map[label]
