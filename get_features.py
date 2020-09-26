@@ -1,12 +1,10 @@
 import torch
-from torchvision import transforms, utils
 from dataset import PlantDiseaseDataset, splitted_loaders
 import numpy as np
 import random
-from model import Leafnet, GLCMeR
+from model import Leafchik
 from tqdm import tqdm
 import os
-from PIL import Image
 
 
 if __name__ == '__main__':
@@ -28,15 +26,8 @@ if __name__ == '__main__':
     # CALCULATED PARAMETERS. MEAN NONZERO RED = 85.384; MEAN NONZERO RED STD = 53.798
     # HOW WAS ABOVE PARAMETERS OBTAINED:
     # ds_mean, ds_std = aggregate_stats(train_loader)  FROM UTILS.PY
-    ds_mean = 85.384
-    ds_std = 53.798
     # QUANTIZATION ON 5 GLOBAL BINS [0, .5, MEAN-STD, MEAN, MEAN+STD, 255]
-    bins = np.array([.0, .5, ds_mean - ds_std, ds_mean, ds_mean + ds_std], dtype='float32')
-
-    #  GLCM PROPERTIES
-    glcm_d = [1, 2, 4]
-    glcm_t = [0, np.pi / 4, np.pi / 2, 3 * np.pi / 4]
-    glcm_l = np.shape(bins)[0]
+    # SEE ALL INFORMATION IN DEFAULT MODEL CONSTRUCTOR
 
     dataset = PlantDiseaseDataset(dataset_info, root_dir)
 
@@ -44,54 +35,18 @@ if __name__ == '__main__':
     train_loader, test_loader = splitted_loaders(dataset, batch_size=batch_size, train_size=train_size)
 
     '''MODEL'''
-    model = Leafnet(bins=bins, global_mean=ds_mean, global_std=ds_std, n_jobs=n_jobs, dist=glcm_d,
-                    theta=glcm_t, levels=glcm_l)
+    model = Leafchik()
 
-    # model = GLCMeR(dist=glcm_d, theta=glcm_t, levels=glcm_l, bins=bins)
+    data_to_save = {'features': [], 'labels': [], 'paths': []}
 
-    state = {'features': [], 'labels': [], 'paths': []}
+    for images, labels, images_paths in tqdm(train_loader, desc='Getting train features'):
+        features = model(images)
+        data_to_save['features'] += [features]
+        data_to_save['labels'] += labels
+        data_to_save['paths'] += images_paths
 
-    i = 0
-    for data in tqdm(train_loader):
-        train_file = os.path.join(root_dir, 'train_global_pooled.pth')
-        a = torch.load(train_file)
-        minima = torch.min(a['features'], dim=0)[0].unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
-        maxima = torch.max(a['features'], dim=0)[0].unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
-        output = model(data['images'])
-        output = output.permute(1,0,2,3)
-        output = 255*(output - minima)/(maxima-minima)
-        output = utils.make_grid(output, nrow=8)
-        output = output.permute(1, 2, 0).numpy()
-        output = np.clip(output, a_min=0, a_max=255)
-        output = np.uint8(np.round(output))
-        #output = output.astype(int)
-        print(np.shape(output))
-        x = Image.fromarray(output)
-        x = x.convert('LA')
-        x_name = os.path.basename(data['paths'][0])
-        x_name = x_name.replace('jpg','png')
-        x_name = dataset.label_map(data['labels'][0].item()) + x_name
-        x_name = os.path.join(root_dir, 'filters/', x_name)
-        x.save(x_name)
-        i += 1
+    data_to_save['features'] = np.concatenate(data_to_save['features'], axis=0)
 
-        # state['features'] += [model(data['images'])]
-        # state['labels'] += data['labels']
-        # state['paths'] += data['paths']
-        if i==0:
-            break
-    #
-    # torch.save(state, os.path.join(root_dir, 'train_global_features.pth'))
-    # print('Train Features Saved!')
-    #
-    # state = {'features': [], 'labels': [], 'paths': []}
-    #
-    # for data in tqdm(test_loader):
-    #     #output = model(data['images'])
-    #     state['features'] += [model(data['images'])]
-    #     state['labels'] += data['labels']
-    #     state['paths'] += data['paths']
-    #
-    # torch.save(state, os.path.join(root_dir, 'test_global_features.pth'))
-    # print('Test Features Saved!')
-    #
+    torch.save(data_to_save, os.path.join(root_dir, 'new_train_features.pth'))
+
+    print('Train features successfully saved')

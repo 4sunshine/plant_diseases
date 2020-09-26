@@ -57,8 +57,8 @@ class PlantDiseaseDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        img_name = os.path.join(self.root, self.paths[idx])
-        image = cv2.imread(img_name)
+        image_path = os.path.join(self.root, self.paths[idx])
+        image = cv2.imread(image_path)
         # H, W, [BGR]
         # RETURN ONLY RED CHANNEL
         image = image[:, :, -1]
@@ -72,5 +72,5 @@ class PlantDiseaseDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return {'images': image, 'labels': self.labels[idx], 'paths': img_name}
+        return image, self.labels[idx], image_path
 
