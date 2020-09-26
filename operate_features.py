@@ -5,7 +5,7 @@ from dataset import RawFeaturesDataset
 from torch.utils.data import DataLoader
 import random
 from tqdm import tqdm
-from model import FeatureOperator
+from model import FeatureOperator, Leafnet
 import torchvision
 
 
@@ -29,19 +29,21 @@ test_loader = DataLoader(test_dataset, batch_size=256, shuffle=True)
 state = {'features': [], 'labels': [], 'paths': []}
 
 with torch.no_grad():
-    model = FeatureOperator(1)
-    model.eval()
-
-    with tqdm(total=len(train_loader)) as pbar:
-        for i, data in enumerate(train_loader):
-
-            # output = model(data['images'])
-            state['features'] += [model(data['features'])]
-            state['labels'] += data['labels']
-            state['paths'] += data['paths']
-            pbar.update(1)
-            if i==20:
-                break
+    model = Leafnet()
+    torch.save(model.state_dict(), '/home/sunshine/bla_bla.pth')
+    #
+    # model.eval()
+    #
+    # with tqdm(total=len(train_loader)) as pbar:
+    #     for i, data in enumerate(train_loader):
+    #
+    #         # output = model(data['images'])
+    #         state['features'] += [model(data['features'])]
+    #         state['labels'] += data['labels']
+    #         state['paths'] += data['paths']
+    #         pbar.update(1)
+    #         if i==20:
+    #             break
     #
     #     state['features'] = torch.cat(state['features'], dim=0)
     #     torch.save(state, os.path.join(root_dir, 'train_global_pooled.pth'))
