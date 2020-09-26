@@ -4,7 +4,6 @@ from dataset import PlantDiseaseDataset, splitted_loaders
 import numpy as np
 import random
 from model import Leafnet, GLCMeR
-from utils import nonzero_stats, aggregate_stats
 from tqdm import tqdm
 import os
 from PIL import Image
@@ -14,24 +13,25 @@ if __name__ == '__main__':
     '''TESTING SETTINGS'''
     np.random.seed(42)
     random.seed(1001)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
     torch.manual_seed(1002)
 
     '''DATASET PARAMS'''
+    # TODO: USE HERE ARGPARSE LIB
     dataset_info = '/home/sunshine/irishka/0.3v/json/src_ds.json'
     root_dir = '/home/sunshine/irishka/0.3v/ds/src'
-    batch_size = 1
-    train_size = 1
+    batch_size = 20
+    train_size = 0.8
     n_jobs = 8  # N JOBS FOR GLCM
-    #  STATISTICS FOR QUANTIZATION  ##################################################
-    #  CALCULATED PARAMETERS. MEAN NONZERO RED = 85.384; MEAN NONZERO RED STD = 53.798
-    #  m, s = aggregate_stats(train_loader)
-    #  ?? NOT IMPLEMENTED: PROPOSE NORMALIZATION WITH PARAMETERS ABOVE
-    #  PROPOSE QUANTIZATION ON 5 GLOBAL BINS [0, .5, MEAN-STD, MEAN, MEAN+STD, 255]
-    mean = 85.384
-    std = 53.798
-    bins = np.array([.0, .5, mean-std, mean, mean+std], dtype='float32')
+    # END OF ARGPARSE PARAMS
+
+    # STATISTICS FOR QUANTIZATION  ##################################################
+    # CALCULATED PARAMETERS. MEAN NONZERO RED = 85.384; MEAN NONZERO RED STD = 53.798
+    # HOW WAS ABOVE PARAMETERS OBTAINED:
+    # ds_mean, ds_std = aggregate_stats(train_loader)  FROM UTILS.PY
+    ds_mean = 85.384
+    ds_std = 53.798
+    # QUANTIZATION ON 5 GLOBAL BINS [0, .5, MEAN-STD, MEAN, MEAN+STD, 255]
+    bins = np.array([.0, .5, ds_mean - ds_std, ds_mean, ds_mean + ds_std], dtype='float32')
 
     #  GLCM PROPERTIES
     glcm_d = [1, 2, 4]
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     train_loader, test_loader = splitted_loaders(dataset, batch_size=batch_size, train_size=train_size)
 
     '''MODEL'''
-    model = Leafnet(bins=bins, global_mean=mean, global_std=std, n_jobs=n_jobs, dist=glcm_d,
+    model = Leafnet(bins=bins, global_mean=ds_mean, global_std=ds_std, n_jobs=n_jobs, dist=glcm_d,
                     theta=glcm_t, levels=glcm_l)
 
     # model = GLCMeR(dist=glcm_d, theta=glcm_t, levels=glcm_l, bins=bins)
