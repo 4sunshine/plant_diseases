@@ -23,25 +23,6 @@ class Leafchik(Module):
         self.dist = Parameter(torch.tensor(dist), requires_grad=False)
         self.theta = Parameter(torch.tensor(theta), requires_grad=False)
         self.levels = Parameter(torch.tensor(len(self.bins)), requires_grad=False)
-        self.params_to_numpy()
-
-    # def state_dict(self):
-    #     state = {
-    #         'stride': self.stride,
-    #         'mask_size': self.mask_size,
-    #         'g_mean': self.g_mean,
-    #         'g_std': self.g_std,
-    #         'bins': self.bins,
-    #         'dist': self.dist,
-    #         'theta': self.theta,
-    #         'levels': self.levels
-    #     }
-    #     return OrderedDict(state)
-
-    def params_to_numpy(self):
-        for name, param in self.named_parameters():
-            # param = param.numpy()
-            print(param)
 
     def all_sliding_windows(self, a):
         """RETURNS ARRAY OF SHAPE (B, C, Nx, Ny, MaskX, MaskY)"""
