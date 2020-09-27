@@ -1,25 +1,47 @@
 import numpy as np
 from skimage.feature import greycomatrix, greycoprops
 from joblib import delayed, Parallel
-import torch.nn as nn
+from torch.nn import Module, Parameter
+import torch
 
 
-class Leafchik(nn.Module):
+class Leafchik(Module):
     PROPERTIES = ('contrast', 'homogeneity', 'energy', 'correlation')
     STAT_AXIS = (-2, -1)
 
-    def __init__(self, stride=(4, 4), mask_size=(17, 17), g_mean=85.384, g_std=53.798, dist=[1, 2, 4],
-                 theta=[0, np.pi / 4, np.pi / 2, 3 * np.pi / 4], n_jobs=8):
+    def __init__(self, n_jobs=8, stride=[4, 4], mask_size=[17, 17], g_mean=85.384, g_std=53.798, dist=[1, 2, 4],
+                 theta=[0, np.pi / 4, np.pi / 2, 3 * np.pi / 4]):
         super().__init__()
-        self.stride = stride
-        self.mask_size = mask_size
-        self.g_mean = g_mean
-        self.g_std = g_std
-        self.bins = np.array([.0, .5, g_mean - g_std, g_mean, g_mean + g_std], dtype='float32')
-        self.dist = dist
-        self.theta = theta
-        self.levels = np.shape(self.bins)[0]  # COULD BE LEN(self.bins) NEED TO TEST
+
         self.n_jobs = n_jobs
+
+        self.stride = Parameter(torch.tensor(stride), requires_grad=False)
+        self.mask_size = Parameter(torch.tensor(mask_size), requires_grad=False)
+        self.g_mean = Parameter(torch.tensor(g_mean), requires_grad=False)
+        self.g_std = Parameter(torch.tensor(g_std), requires_grad=False)
+        self.bins = Parameter(torch.tensor([.0, .5, g_mean - g_std, g_mean, g_mean + g_std]), requires_grad=False)
+        self.dist = Parameter(torch.tensor(dist), requires_grad=False)
+        self.theta = Parameter(torch.tensor(theta), requires_grad=False)
+        self.levels = Parameter(torch.tensor(len(self.bins)), requires_grad=False)
+        self.params_to_numpy()
+
+    # def state_dict(self):
+    #     state = {
+    #         'stride': self.stride,
+    #         'mask_size': self.mask_size,
+    #         'g_mean': self.g_mean,
+    #         'g_std': self.g_std,
+    #         'bins': self.bins,
+    #         'dist': self.dist,
+    #         'theta': self.theta,
+    #         'levels': self.levels
+    #     }
+    #     return OrderedDict(state)
+
+    def params_to_numpy(self):
+        for name, param in self.named_parameters():
+            # param = param.numpy()
+            print(param)
 
     def all_sliding_windows(self, a):
         """RETURNS ARRAY OF SHAPE (B, C, Nx, Ny, MaskX, MaskY)"""
@@ -30,14 +52,16 @@ class Leafchik(nn.Module):
         return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
     def statistics(self, a):
+        g_mean = self.g_mean.numpy()
+        g_std = self.g_std.numpy()
         means = a.mean(axis=self.STAT_AXIS)
         std = a.std(axis=self.STAT_AXIS)
         maximums = a.max(axis=self.STAT_AXIS)
         minimums = a.min(axis=self.STAT_AXIS)
-        means /= self.g_mean
-        std /= self.g_std
-        maximums = (maximums - means) / self.g_std
-        minimums = (means - minimums) / self.g_std
+        means /= g_mean
+        std /= g_std
+        maximums = (maximums - means) / g_std
+        minimums = (means - minimums) / g_std
         return np.concatenate([means, std, maximums, minimums], axis=1)
 
     def quantize(self, x):
@@ -47,15 +71,16 @@ class Leafchik(nn.Module):
         return x.reshape(sh)
 
     def _single_hist_glcm_calculate(self, q):
-        g = greycomatrix(q, self.dist, self.theta, self.levels, normed=True, symmetric=True)
+        levels = self.levels.numpy()
+        g = greycomatrix(q, self.dist, self.theta, levels, normed=True, symmetric=True)
         props = np.array([greycoprops(g, p) for p in self.PROPERTIES]).reshape(-1)
         entropy = -np.sum(np.multiply(g, np.log2(g+1e-8)), axis=(0, 1)).reshape(-1)
         props = np.concatenate([props, entropy], axis=0)
         # CALCULATE HIST HERE
         if np.max(q) > 0:
-            hist, _ = np.histogram(q.reshape(-1), bins=np.arange(1, self.levels+1), density=True)
+            hist, _ = np.histogram(q.reshape(-1), bins=np.arange(1, levels + 1), density=True)
         else:
-            hist = np.zeros(self.levels - 1)
+            hist = np.zeros(levels - 1)
         return np.concatenate([hist, props], axis=0)
 
     def hist_glcm(self, q):
