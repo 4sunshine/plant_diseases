@@ -96,12 +96,34 @@ class Leafchik(Module):
 
 
 class HealthyPlant(Module):
-    def __init__(self, backbone, sklearn_classifier):
+    def __init__(self, backbone, sklearn_classifier, clf_mean, clf_std, indices):
         super().__init__()
 
         self.backbone = backbone
         self.classifier = sklearn_classifier
+        self.clf_mean = clf_mean
+        self.clf_std = clf_std
+        self.indices = indices
+
+    def filter(self, data):
+        if self.indices is None:
+            return data
+        else:
+            return data[:, self.indices]
+
+    def normalize(self, data):
+        if self.clf_mean is None:
+            return data
+        else:
+            data -= self.clf_mean
+        if self.clf_std is None:
+            return data
+        else:
+            data /= self.clf_std
+            return data
 
     def forward(self, x):
         features = self.backbone(x)
+        features = self.filter(features)
+        features = self.normalize(features)
         return self.classifier.predict(features)

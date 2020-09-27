@@ -77,7 +77,11 @@ if __name__ == '__main__':
 
     data, best_classifier = classification_results(classifiers, classifiers_names, train_file, test_file)
 
-    torch.save(best_classifier, '/home/sunshine/irishka/best_classifier.pth')
+    classifier, mean, std, ind = best_classifier
+
+    classifier_state = {'classifier': classifier, 'mean': mean, 'std': std, 'indices': ind}
+
+    torch.save(classifier_state, '/home/sunshine/irishka/best_classifier.pth')
 
     df = pd.DataFrame(data=data)
     df.to_excel(os.path.join(root_dir, 'RESULT.xlsx'))

@@ -55,17 +55,23 @@ def train_and_test(ind, clf, train_data, test_data, center=True, whiten=True):
     if ind:
         train_features = train_features[:, ind]
         test_features = test_features[:, ind]
+    else:
+        ind = None
     if center:
         train_mean, train_features = center_data(train_features)
         test_features = center_data(test_features, train_mean)
+    else:
+        train_mean = None
     if whiten:
         train_std, train_features = whiten_data(train_features)
         test_features = whiten_data(test_features, train_std)
+    else:
+        train_std = None
 
     clf.fit(train_features, train_labels)
     prediction = clf.predict(test_features)
 
     pr, rec, fs, sup = precision_recall_fscore_support(test_labels, prediction, zero_division=0, average='binary')
 
-    return clf, (pr, rec, fs)
+    return (clf, train_mean, train_std, ind), (pr, rec, fs)
 

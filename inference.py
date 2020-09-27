@@ -21,8 +21,12 @@ def load_and_preprocess(image_path, target_size=(256, 256)):
 
 def load_model(backbone, backbone_path, sklearn_classifier_path):
     sklearn_classifier = torch.load(sklearn_classifier_path)
+    classifier = sklearn_classifier['classifier']
+    c_mean = sklearn_classifier['mean']
+    c_std = sklearn_classifier['std']
+    c_indices = sklearn_classifier['indices']
     backbone.load_state_dict(torch.load(backbone_path))
-    return HealthyPlant(backbone, sklearn_classifier)
+    return HealthyPlant(backbone, classifier, c_mean, c_std, c_indices)
 
 
 if __name__ == '__main__':
