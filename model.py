@@ -94,3 +94,14 @@ class Leafchik(Module):
         # numpy_average_pooling
         return np.mean(features, axis=(-2, -1), keepdims=False)
 
+
+class HealthyPlant(Module):
+    def __init__(self, backbone, sklearn_classifier):
+        super().__init__()
+
+        self.backbone = backbone
+        self.classifier = sklearn_classifier
+
+    def forward(self, x):
+        features = self.backbone(x)
+        return self.classifier.predict(features)
